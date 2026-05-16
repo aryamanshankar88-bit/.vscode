@@ -1,0 +1,69 @@
+{
+    "peerDepenencies": {
+        "zod": "^3.0.0"
+    },
+    "peerDependenciesMeta": {
+        "zod": {
+            "optional": true
+        }
+    }
+}
+// packages /db/src/arc/collection.ts
+
+import type { ZodSchema } from "zod";
+
+export class CollectionRef<T = any> {
+    private schema?: ZodSchema<T>;
+
+    withSchema(schema: ZodSchema<T>) : this {
+        this.schema= schema;
+        return this;
+    }
+    private validate(data: unknown) : T {
+        if (!this.schema) return data as T ;
+
+        const result = this.schema.safeParse(data);
+        if (!result.success) {
+            throw new ZerithValidationError(result.error);
+
+        }
+        return result.data;
+    }
+    async insert(doc: unknown) : Promise<void> {
+        const validated = this.validate(doc);
+        await this.db.put(this.name, validated);
+
+}
+async update(id: string, doc: unknown): Promise<void> {
+    const validated = this.validate(doc);
+    await this.d.update(this.name, id, validated);
+}
+}
+//packages/sdk/ssrc/errors.ts
+import type { ZodError} from "zod";
+
+export class ZerithValidationError extends Error {
+    public randonly zodError: ZodError;
+
+    constructor(zodError: ZodError) {
+        super('Validation failed: ${zodError.message}');
+        this.name = "ZerithValidationError";
+        this.zodError = zodError;
+    }
+}
+
+private validate(data: unknown) : T {
+    if (!this.schema) return data as T;
+
+    try {
+        const result = this.schema.safeParse(data);
+        if (!result.sucess) {
+            throw new ZerithValidationError(result.error); 
+        }
+        return result.data;
+    } catch (e) {
+        if (e instanceof ZerithValidationError) throe e;
+        throw new Error("Zod is required for schema validation. Run: npm install zod");
+
+    }
+}
